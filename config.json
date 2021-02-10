@@ -1,0 +1,20 @@
+{
+    "stats":{
+        "run":["distance_km", "time", "pace_km"],
+        "swim":["distance_m", "time", "pace_100m"],
+        "ride":["distance_km", "time"],
+        "walk":["distance_km"],
+        "kayaking":["time"]
+    },
+    "whats_better":
+    {
+        "distance_km":"more",
+        "distance_m":"more",
+        "time":"more",
+        "pace_km": "less",
+        "pace_100m": "less"
+    }
+}
+
+
+

@@ -13,13 +13,12 @@ def get_activity_type_group(activity):
     type = group_activity_icon.find_element_by_xpath('.//span[starts-with(@class, "app-icon icon-")]')
     return type.get_attribute('class').split()[1].split("-")[1]
 
-
 def get_activity_type_single(activity):
     single_activity_icon = activity.find_element_by_css_selector('div.entry-icon.media-left')
     type = single_activity_icon.find_element_by_xpath('.//span[starts-with(@class, "app-icon icon-")]')
     return type.get_attribute('class').split()[1].split("-")[1]
 
-def riding_get_distance(activity):
+def stats_distance_km_get(activity):
     stats = activity.find_elements_by_css_selector("div.stat")
     for stat in stats:
         stat_text = stat.find_element_by_css_selector("div.stat-subtext").text
@@ -29,17 +28,29 @@ def riding_get_distance(activity):
             return float(distance)
     raise Exception("no distance found")
 
-def running_get_distance(activity):
+def timeStr_to_time(time_str):
+    if "h" in time_str:
+        time_pattern = '%Hh %Mm'
+    elif "s" in time_str:
+        time_pattern = '%Mm %Ss'
+    elif ":" in time_str:
+        time_pattern = '%H:%M:%S'
+    else:
+        Exception("Invalid time string", time_str)
+
+    date_time = datetime.strptime(time_str, time_pattern)
+    return date_time - datetime(1900, 1, 1)
+
+def stats_time_get(activity):
     stats = activity.find_elements_by_css_selector("div.stat")
     for stat in stats:
         stat_text = stat.find_element_by_css_selector("div.stat-subtext").text
-        if stat_text == "Distance":
-            dist_str = stat.find_element_by_css_selector("b.stat-text").text
-            distance = dist_str.split()[0]
-            return float(distance)
-    raise Exception("no distance found")
+        if stat_text == "Time":
+            time_str = stat.find_element_by_css_selector("b.stat-text").text
+            return timeStr_to_time(time_str)
+    raise Exception("no time found")
 
-def running_get_pace(activity):
+def stats_pace_km_get(activity):
     dist_str = ""
     time_str = ""
     stats = activity.find_elements_by_css_selector("div.stat")
@@ -83,65 +94,94 @@ def give_kudos(driver, activity):
     try:
         kudos_button = webElement.find_element_by_css_selector("button.btn.btn-icon.btn-icon-only.btn-kudo.btn-xs.js-add-kudo")
     except:
-        return
+        activity["kudos"] = "already given"
+        return 0
     actions = ActionChains(driver)
     actions.move_to_element(kudos_button).perform()
-    time.sleep(2.8)
+    time.sleep(2)
     kudos_button.click()
-    time.sleep(0.2)
+    activity["kudos"] = "given"
+    return 1
+
+def to_ascii(str):
+    return ''.join([i if ord(i) < 128 else '' for i in str])
 
 def get_athlete_name(activity):
     athlete_name = activity.find_element_by_css_selector("a.entry-owner").text
-    return ''.join([i if ord(i) < 128 else '' for i in athlete_name])
+    return to_ascii(athlete_name)
 
 def get_athlete_id(activity):
     athlete = activity.find_element_by_css_selector("a.entry-owner")
     return athlete.get_attribute('href').split("/")[-1]
 
-def swimming_get_stats(activity):
-    stats = {}
+def stats_distance_m_get(activity):
+    stats = activity.find_elements_by_css_selector("div.stat")
+    for stat in stats:
+        stat_text = stat.find_element_by_css_selector("div.stat-subtext").text
+        if stat_text == "Distance":
+            dist_str = stat.find_element_by_css_selector("b.stat-text").text
+            distance = dist_str.split()[0].replace(",","")
+            return float(distance)
+    raise Exception("no distance found")
 
-    stats["pace"] = swimming_get_pace(activity)
+def get_activity_details(type, activityWebElement, config):
+    stats_functions = {
+            "distance_km": stats_distance_km_get,
+            "distance_m": stats_distance_m_get,
+            "pace_km": stats_pace_km_get,
+            "pace_100m": stats_pace_100m_get,
+            "time": stats_time_get,
+            }
 
-    return stats
-
-def running_get_stats(activity):
-    stats = {}
-    
-    stats["pace"] = running_get_pace(activity)
-    stats["distance"] = running_get_distance(activity)
-
-    return stats
-
-def riding_get_stats(activity):
-    stats = {}
-    
-    stats["distance"] = riding_get_distance(activity)
-
-    return stats
-
-def get_activity_details(type, activityWebElement):
-    get_stats_fn = {"run":running_get_stats, "swim": swimming_get_stats, "ride": riding_get_stats}
     activity = {}
-    activity["type"] = type
     activity["athlete_name"] = get_athlete_name(activityWebElement)
     activity["athlete_id"] = get_athlete_id(activityWebElement)
     activity["web_element"] = activityWebElement
-    if type in get_stats_fn:
-        activity["stats"] = get_stats_fn[type](activityWebElement)
+    activity["type"] = type
+
+    if type not in config["stats"]:
+        print(type, "not supported")
+        return activity
+    
+    stats = {}
+    for key in config["stats"][type]:
+        stats[key] = stats_functions[key](activityWebElement)
+    activity["stats"] = stats
+    print(type, stats)
+
     return activity
 
 def scroll_to_end_of_page(driver):
     body = driver.find_element_by_css_selector('body')
     body.send_keys(Keys.END)
-    time.sleep(3)
+    #time.sleep(3)
 
 def scroll_to_start_of_page(driver):
     body = driver.find_element_by_css_selector('body')
     body.send_keys(Keys.HOME)
-    time.sleep(3)
+    #time.sleep(3)
 
-def fetch_activities(driver, num_activities):
+def get_activity_type(driver, activity):
+    activity_url = activity.find_element_by_xpath('.//a[starts-with(@href, "/activities/")]')
+    activity_id = activity_url.get_attribute('href').split('/')[-1]
+
+    origin_window = driver.current_window_handle
+
+    url = f"https://www.strava.com/activities/{activity_id}"
+
+    driver.execute_script(f"window.open('{url}', 'activity')")
+
+    driver.switch_to_window(driver.window_handles[-1])
+    type = driver.find_element_by_css_selector("span.title").text
+    driver.close()
+    
+    driver.switch_to_window(origin_window)
+
+    type = to_ascii(type.split('–')[1].replace(" ", "").lower())
+
+    return type
+
+def fetch_activities(driver, num_activities, config):
 
     activities = []
     grouped_activities = []
@@ -152,17 +192,16 @@ def fetch_activities(driver, num_activities):
         scroll_to_end_of_page(driver)
     
     for grouped_activity in grouped_activities:
-        type = get_activity_type_group(grouped_activity)
         child_activities = grouped_activity.find_elements_by_css_selector("li.activity.child-entry")
         for child_activity in child_activities:
-            activity = get_activity_details(type, child_activity)
+            type = get_activity_type(driver, child_activity)
+            activity = get_activity_details(type, child_activity, config)
             activity["group"] = "yes"
             activities.append(activity)
 
-
     for single_activity in single_activities:
-        type = get_activity_type_single(single_activity)
-        activity = get_activity_details(type, single_activity)
+        type = get_activity_type(driver, single_activity)
+        activity = get_activity_details(type, single_activity, config)
         activity["group"] = "no"
         activities.append(activity)
 
@@ -170,38 +209,61 @@ def fetch_activities(driver, num_activities):
     
     return activities
 
-def running_kudos_check(activity, default_kudos_criteria, athlete_kudos_criteria):
-    distance_criteria = None
-    pace_criteria = None
+def convert_to_compareable(value, criteria):
 
-    if "distance" in athlete_kudos_criteria:
-        distance_criteria = float(athlete_kudos_criteria["distance"])
-    elif "distance" in default_kudos_criteria:
-        distance_criteria = float(default_kudos_criteria["distance"])
+    if criteria == "distance_km" or criteria == "distance_m":
+        return float(value)
 
-    if "pace" in athlete_kudos_criteria:
-        pace_criteria = paceStr_to_time(athlete_kudos_criteria["pace"])
-    elif "pace" in default_kudos_criteria:
-        pace_criteria = paceStr_to_time(default_kudos_criteria["pace"])
+    if criteria == "pace_km" or criteria == "pace_100m":
+        return paceStr_to_time(value)
 
-    if distance_criteria == None and pace_criteria == None:
+    if criteria == "time":
+        return timeStr_to_time(value)
+
+    print("invalid criteria", criteria, value)
+    return None
+
+def kudos_check(activity, user_cfg, config):
+
+    type = activity["type"]
+    athlete_id = activity["athlete_id"]
+
+    if type not in config["stats"]:
+        print(type, "not supported")
         return 0
     
-    distance = activity["stats"]["distance"]
-    pace = activity["stats"]["pace"]
-    
-    print("criteria    =", distance_criteria, pace_criteria)
-    print("achievement =", distance, pace)
+    criterias = config["stats"][type]
 
-    if pace_criteria != None and pace <= pace_criteria:
-        return 1
+    targets = {}
+    for criteria in criterias:
+        try:
+            targets[criteria] = user_cfg["athletes"][athlete_id]["criteria"][type][criteria]
+        except:
+            pass
 
-    if distance_criteria != None and distance >= distance_criteria:
-        return 1
+        if criteria not in targets:
+            try:
+                targets[criteria] = user_cfg["default"][type][criteria]
+            except:
+                pass
+            
+    for criteria in targets:
+        target = targets[criteria]
+        target = convert_to_compareable(target, criteria)
+
+        achieved = activity["stats"][criteria]
+        
+        print(criteria, achieved, target)
+        if config["whats_better"][criteria] == "more":
+            if achieved >= target:
+                return 1
+        else:
+            if achieved <= target:
+                return 1
 
     return 0
 
-def swimming_get_pace(activity):
+def stats_pace_100m_get(activity):
     stats = activity.find_elements_by_css_selector("div.stat")
     for stat in stats:
         stat_text = stat.find_element_by_css_selector("div.stat-subtext").text
@@ -211,75 +273,11 @@ def swimming_get_pace(activity):
       
     raise Exception("no swimming pace")
 
-def swimming_kudos_check(activity, default_kudos_criteria, athlete_kudos_criteria):
-    pace_criteria = None
-
-    if "pace" in athlete_kudos_criteria:
-        pace_criteria = paceStr_to_time(athlete_kudos_criteria["pace"])
-    elif "pace" in default_kudos_criteria:
-        pace_criteria = paceStr_to_time(default_kudos_criteria["pace"])
-
-    if pace_criteria == None:
-        return 0
-
-    pace = activity["stats"]["pace"]
-    
-    print("criteria    =", pace_criteria)
-    print("achievement =", pace)
-
-    if pace_criteria != None and pace <= pace_criteria:
-        return 1
-
-    return 0
-
-def riding_kudos_check(activity, default_kudos_criteria, athlete_kudos_criteria):
-    distance_criteria = None
-
-    if "distance" in athlete_kudos_criteria:
-        distance_criteria = float(athlete_kudos_criteria["distance"])
-    elif "distance" in default_kudos_criteria:
-        distance_criteria = float(default_kudos_criteria["distance"])
-
-    if distance_criteria == None:
-        return 0
-
-    distance = activity["stats"]["distance"]
-    
-    print("criteria    =", distance_criteria)
-    print("achievement =", distance)
-
-    if distance >= distance_criteria:
-        return 1
-
-    return 0
-
-def kudos_check_activity_not_supported(activity, default_kudos_criteria, athlete_kudos_criteria):
-    print("activity not supported")
-    return 0
-
-def get_kudos_check_fn(type):
-    supported_activities = {"run": running_kudos_check, "swim": swimming_kudos_check, "ride": riding_kudos_check}
-
-    if type not in supported_activities:
-        return kudos_check_activity_not_supported
-
-    return supported_activities[type]
-
-def get_default_kudos_criteria(type, config):
-    if type in config["default"]:
-        return config["default"][type]
-    return {}
-
-def get_athlete_kudos_criteria(type, athlete_id, config):
-    if athlete_id in config["athletes"] and type in config["athletes"][athlete_id]["criteria"]:
-        return config["athletes"][athlete_id]["criteria"][type]
-    return {}
-
-def is_athlete_vip(athlete_id, config):
-    return athlete_id in config["vip"]
+def is_athlete_vip(athlete_id, user_cfg):
+    return athlete_id in user_cfg["vip"]
         
-def is_athlete_on_ignore_list(athlete_id, config):
-    return athlete_id in config["ignore"]
+def is_athlete_on_ignore_list(athlete_id, user_cfg):
+    return athlete_id in user_cfg["ignore"]
 
 def strava_login(user, pw):
     chrome_options = webdriver.ChromeOptions()
@@ -292,7 +290,7 @@ def strava_login(user, pw):
     print(url)
     
     driver = webdriver.Chrome("/usr/bin/chromedriver", options=chrome_options)
-                
+
     driver.delete_all_cookies()
     driver.get(url)
     
@@ -305,12 +303,12 @@ def strava_login(user, pw):
     login.click()
     return driver
 
-def group_kudos_for_all(config):
-    return config["group_activity_all_kudos"] == "yes"
+def group_kudos_for_all(user_cfg):
+    return user_cfg["group_activity_all_kudos"] == "yes"
 
-def check_activities(driver, config):
-    
-    activities = fetch_activities(driver, 10)
+def check_activities(driver, user_cfg, config):
+    total_kudos = 0    
+    activities = fetch_activities(driver, 50, config)
     
     for activity in activities:
         type = activity["type"]
@@ -319,30 +317,25 @@ def check_activities(driver, config):
 
         print(type, athlete_id, athlete_name)
         
-        if is_athlete_on_ignore_list(athlete_id, config):
+        if is_athlete_on_ignore_list(athlete_id, user_cfg):
             print("is ignore")
             kudos = 0
-        elif is_athlete_vip(athlete_id, config):
+        elif is_athlete_vip(athlete_id, user_cfg):
             print("is vip")
             kudos = 1
-        elif activity["group"] == "yes" and group_kudos_for_all(config):
+        elif activity["group"] == "yes" and group_kudos_for_all(user_cfg):
             print("is group")
             kudos = 1
         else:
-            kudos_check_fn = get_kudos_check_fn(type)
-            default_kudos_criteria = get_default_kudos_criteria(type, config)
-            athlete_kudos_criteria = get_athlete_kudos_criteria(type, athlete_id, config)
-            kudos = kudos_check_fn(activity, default_kudos_criteria, athlete_kudos_criteria)
+            kudos = kudos_check(activity, user_cfg, config)
 
         if kudos:
-            print(f"  KUDOS {athlete_name}")
-            give_kudos(driver, activity)
+            total_kudos = total_kudos + give_kudos(driver, activity)
+            print(f"  KUDOS to {athlete_name} {activity['kudos']}")
         else:
             print(f"  Sorry {athlete_name}, no kudos")
         print()
-
-    driver.quit()
-
+    return total_kudos
 
 parser = ArgumentParser()
 parser.add_argument("-p", "--password", dest="password", help="Password for strava, won't be stored", required=True)
@@ -351,8 +344,15 @@ parser.add_argument("-u", "--username", dest="username", help="Username for stra
 args = parser.parse_args()
 
 if __name__ == "__main__":
+    with open('user.json') as json_file:
+        user_cfg = json.load(json_file)
+    
     with open('config.json') as json_file:
         config = json.load(json_file)
 
     driver = strava_login(args.username, args.password)
-    check_activities(driver, config)
+    kudos_given = check_activities(driver, user_cfg, config)
+
+    print(kudos_given, "Kudos given")
+
+    driver.quit()
