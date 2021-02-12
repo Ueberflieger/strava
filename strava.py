@@ -1,5 +1,4 @@
 from argparse import ArgumentParser
-from bs4 import BeautifulSoup
 from selenium import webdriver
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.common.keys import Keys
@@ -7,6 +6,7 @@ from datetime import datetime
 import time
 import json
 import math
+from strava_login import strava_login
 
 def get_activity_type_group(activity):
     group_activity_icon = activity.find_element_by_css_selector('div.group-activity-icon')
@@ -265,36 +265,12 @@ def is_athlete_vip(athlete_id, user_cfg):
 def is_athlete_on_ignore_list(athlete_id, user_cfg):
     return athlete_id in user_cfg["ignore"]
 
-def strava_login(user, pw):
-    chrome_options = webdriver.ChromeOptions()
-    chrome_options.headless = True
-    chrome_options.add_argument("--disable-plugins-discovery");
-    prefs = {"profile.managed_default_content_settings.images": 2}
-    chrome_options.add_experimental_option("prefs", prefs)
-    
-    url = "https://www.strava.com/login"
-    print(url)
-    
-    driver = webdriver.Chrome("/usr/bin/chromedriver", options=chrome_options)
-
-    driver.delete_all_cookies()
-    driver.get(url)
-    
-    email = driver.find_element_by_id("email")
-    password = driver.find_element_by_id("password")
-    login = driver.find_element_by_id("login-button")
-    
-    email.send_keys(user);
-    password.send_keys(pw);
-    login.click()
-    return driver
-
 def group_kudos_for_all(user_cfg):
     return user_cfg["group_activity_all_kudos"] == "yes"
 
-def check_activities(driver, user_cfg, config):
+def check_activities(driver, user_cfg, config, num_activities):
     total_kudos = 0    
-    activities = fetch_activities(driver, 20, config)
+    activities = fetch_activities(driver, num_activities, config)
     
     for activity in activities:
         type = activity["type"]
@@ -327,6 +303,7 @@ def check_activities(driver, user_cfg, config):
 parser = ArgumentParser()
 parser.add_argument("-p", "--password", dest="password", help="Password for strava, won't be stored", required=True)
 parser.add_argument("-u", "--username", dest="username", help="Username for strava", required=True)
+parser.add_argument("-n", "--n_activities", dest="num_activities", help="Number of activities to check", required=True)
 
 args = parser.parse_args()
 
@@ -338,7 +315,7 @@ if __name__ == "__main__":
         config = json.load(json_file)
 
     driver = strava_login(args.username, args.password)
-    kudos_given = check_activities(driver, user_cfg, config)
+    kudos_given = check_activities(driver, user_cfg, config, int(args.num_activities))
 
     print(kudos_given, "Kudos given")
 
