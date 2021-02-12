@@ -145,7 +145,10 @@ def get_activity_details(type, activityWebElement, config):
     
     stats = {}
     for key in config["stats"][type]:
-        stats[key] = stats_functions[key](activityWebElement)
+        try:
+            stats[key] = stats_functions[key](activityWebElement)
+        except:
+            continue
     activity["stats"] = stats
     print(type, stats)
 
@@ -154,32 +157,12 @@ def get_activity_details(type, activityWebElement, config):
 def scroll_to_end_of_page(driver):
     body = driver.find_element_by_css_selector('body')
     body.send_keys(Keys.END)
-    #time.sleep(3)
+    time.sleep(3)
 
 def scroll_to_start_of_page(driver):
     body = driver.find_element_by_css_selector('body')
     body.send_keys(Keys.HOME)
-    #time.sleep(3)
-
-def get_activity_type(driver, activity):
-    activity_url = activity.find_element_by_xpath('.//a[starts-with(@href, "/activities/")]')
-    activity_id = activity_url.get_attribute('href').split('/')[-1]
-
-    origin_window = driver.current_window_handle
-
-    url = f"https://www.strava.com/activities/{activity_id}"
-
-    driver.execute_script(f"window.open('{url}', 'activity')")
-
-    driver.switch_to_window(driver.window_handles[-1])
-    type = driver.find_element_by_css_selector("span.title").text
-    driver.close()
-    
-    driver.switch_to_window(origin_window)
-
-    type = to_ascii(type.split('–')[1].replace(" ", "").lower())
-
-    return type
+    time.sleep(3)
 
 def fetch_activities(driver, num_activities, config):
 
@@ -193,14 +176,14 @@ def fetch_activities(driver, num_activities, config):
     
     for grouped_activity in grouped_activities:
         child_activities = grouped_activity.find_elements_by_css_selector("li.activity.child-entry")
+        type = get_activity_type_group(grouped_activity)
         for child_activity in child_activities:
-            type = get_activity_type(driver, child_activity)
             activity = get_activity_details(type, child_activity, config)
             activity["group"] = "yes"
             activities.append(activity)
 
     for single_activity in single_activities:
-        type = get_activity_type(driver, single_activity)
+        type = get_activity_type_single(single_activity)
         activity = get_activity_details(type, single_activity, config)
         activity["group"] = "no"
         activities.append(activity)
@@ -250,6 +233,9 @@ def kudos_check(activity, user_cfg, config):
     for criteria in targets:
         target = targets[criteria]
         target = convert_to_compareable(target, criteria)
+
+        if criteria not in activity["stats"]:
+            continue
 
         achieved = activity["stats"][criteria]
         
@@ -308,7 +294,7 @@ def group_kudos_for_all(user_cfg):
 
 def check_activities(driver, user_cfg, config):
     total_kudos = 0    
-    activities = fetch_activities(driver, 50, config)
+    activities = fetch_activities(driver, 20, config)
     
     for activity in activities:
         type = activity["type"]
@@ -323,11 +309,12 @@ def check_activities(driver, user_cfg, config):
         elif is_athlete_vip(athlete_id, user_cfg):
             print("is vip")
             kudos = 1
-        elif activity["group"] == "yes" and group_kudos_for_all(user_cfg):
-            print("is group")
-            kudos = 1
         else:
             kudos = kudos_check(activity, user_cfg, config)
+            if not kudos and activity["group"] == "yes" and group_kudos_for_all(user_cfg):
+                # maybe at least you can get kudos for a group activity
+                print("is group")
+                kudos = 1
 
         if kudos:
             total_kudos = total_kudos + give_kudos(driver, activity)
