@@ -140,7 +140,7 @@ def get_activity_details(type, activityWebElement, config):
     activity["type"] = type
 
     if type not in config["stats"]:
-        print(type, "not supported")
+        #print(type, "not supported")
         return activity
     
     stats = {}
@@ -150,7 +150,7 @@ def get_activity_details(type, activityWebElement, config):
         except:
             continue
     activity["stats"] = stats
-    print(type, stats)
+    #print(type, stats)
 
     return activity
 
@@ -304,11 +304,15 @@ parser = ArgumentParser()
 parser.add_argument("-p", "--password", dest="password", help="Password for strava, won't be stored", required=True)
 parser.add_argument("-u", "--username", dest="username", help="Username for strava", required=True)
 parser.add_argument("-n", "--n_activities", dest="num_activities", help="Number of activities to check", required=True)
+parser.add_argument("-c", "--user-config-path", dest="user_config", help="Your config as command line parameter, if not provided a user.json file is expected in the root")
 
 args = parser.parse_args()
 
 if __name__ == "__main__":
-    with open('user.json') as json_file:
+    user_config = 'user.json'
+    if args.user_config:
+        user_config = args.user_config
+    with open(user_config) as json_file:
         user_cfg = json.load(json_file)
     
     with open('config.json') as json_file:
