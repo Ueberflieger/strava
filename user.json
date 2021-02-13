@@ -1,0 +1,20 @@
+{
+    "group_activity_all_kudos": "yes",
+    "ignore":[],
+    "vip":[],
+    "default":
+    {
+        "run": {"distance_km": "12", "pace_km":"5:00"}, 
+        "swim":{"pace_100m":"2:00"}, 
+        "ride":{"distance_km": "30"},
+        "kayaking":{"time": "1:00:00"}
+    },
+    "athletes": 
+    {
+        "123456"  :{ "name": "Your Friend 1", "criteria":{ "run":{"pace_km":"4:30", "distance_km":"14"}}},
+        "234567"  :{ "name": "Your Friend 2", "criteria":{ "swim":{"pace_100m":"1:30"}}}
+    }
+}
+
+
+
