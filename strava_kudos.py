@@ -41,6 +41,9 @@ def timeStr_to_time(time_str):
     date_time = datetime.strptime(time_str, time_pattern)
     return date_time - datetime(1900, 1, 1)
 
+def paceStr_to_time(time_str):
+    return datetime.strptime(time_str, '%M:%S').time()
+
 def stats_time_get(activity):
     stats = activity.find_elements_by_css_selector("div.stat")
     for stat in stats:
@@ -49,6 +52,15 @@ def stats_time_get(activity):
             time_str = stat.find_element_by_css_selector("b.stat-text").text
             return timeStr_to_time(time_str)
     raise Exception("no time found")
+
+def stats_pace_100m_get(activity):
+    stats = activity.find_elements_by_css_selector("div.stat")
+    for stat in stats:
+        stat_text = stat.find_element_by_css_selector("div.stat-subtext").text
+        if stat_text == "Pace":
+            pace_str = stat.find_element_by_css_selector("b.stat-text").text.split()[0]
+            return paceStr_to_time(pace_str)
+    raise Exception("no swimming pace")
 
 def stats_pace_km_get(activity):
     dist_str = ""
@@ -85,9 +97,6 @@ def time_distance_to_pace(time_str, dist_str):
     pace_str = f"{pace_min:.0f}:{pace_sec:.0f}"
 
     return paceStr_to_time(pace_str)
-
-def paceStr_to_time(time_str):
-    return datetime.strptime(time_str, '%M:%S').time()
 
 def give_kudos(driver, activity):
     webElement = activity["web_element"]
@@ -248,16 +257,6 @@ def kudos_check(activity, user_cfg, config):
                 return 1
 
     return 0
-
-def stats_pace_100m_get(activity):
-    stats = activity.find_elements_by_css_selector("div.stat")
-    for stat in stats:
-        stat_text = stat.find_element_by_css_selector("div.stat-subtext").text
-        if stat_text == "Pace":
-            pace_str = stat.find_element_by_css_selector("b.stat-text").text.split()[0]
-            return paceStr_to_time(pace_str)
-      
-    raise Exception("no swimming pace")
 
 def is_athlete_vip(athlete_id, user_cfg):
     return athlete_id in user_cfg["vip"]
