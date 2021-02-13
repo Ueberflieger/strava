@@ -11,9 +11,10 @@ Currently it supports:
 ## Usage
 
 ```
-usage: strava.py [-h] -p PASSWORD -u USERNAME -n NUM_ACTIVITIES
+usage: strava_kudos.py [-h] -p PASSWORD -u USERNAME -n NUM_ACTIVITIES
+                       [-c USER_CONFIG]
 
-optional arguments:
+arguments:
   -h, --help            show this help message and exit
   -p PASSWORD, --password PASSWORD
                         Password for strava, won't be stored
@@ -21,6 +22,8 @@ optional arguments:
                         Username for strava
   -n NUM_ACTIVITIES, --n_activities NUM_ACTIVITIES
                         Number of activities to check
+  -c USER_CONFIG, --user-config-path USER_CONFIG
+                        Your config as command line parameter, if 
 
 ```
 
