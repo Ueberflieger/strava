@@ -277,7 +277,7 @@ def check_activities(driver, user_cfg, config, num_activities):
         athlete_id = activity["athlete_id"]
         athlete_name = activity["athlete_name"]
 
-        print(type, athlete_id, athlete_name)
+        print(type, athlete_name, athlete_id)
         
         if is_athlete_on_ignore_list(athlete_id, user_cfg):
             print("is ignore")
