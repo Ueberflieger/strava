@@ -110,6 +110,10 @@ args = parser.parse_args()
 
 if __name__ == "__main__":
 
+    # random delay
+    min = get_random_minutes(0, 20)
+    time.sleep(min * 60)
+
     driver = strava_login(args.username, args.password)
 
     manual_swim_activity(driver)
