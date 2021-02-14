@@ -259,7 +259,10 @@ def kudos_check(activity, user_cfg, config):
     return 0
 
 def is_athlete_vip(athlete_id, user_cfg):
-    return athlete_id in user_cfg["vip"]
+    vip = user_cfg["vip"]
+    if athlete_id in vip or "everyone" in vip:
+        return 1
+    return 0
         
 def is_athlete_on_ignore_list(athlete_id, user_cfg):
     return athlete_id in user_cfg["ignore"]

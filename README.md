@@ -37,7 +37,7 @@ It has following structure:
 {
     "group_activity_all_kudos": "yes", // give kudos if it's a group activity
     "ignore":[], // list of people to ignore, add athlete ids here not names
-    "vip":[], // people who receive kudos for every activity
+    "vip":[], // people who receive kudos for every activity, can contain ["everyone"] to give kudos to everyone for everything
     "default": // defaults for activities
     {
         "run": {"distance_km": "12", "pace_km":"5:00"}, 
@@ -72,4 +72,3 @@ It has following structure:
 ## Todo
 
 * based on button figure out if this is the users own activity
-* reorder functions
