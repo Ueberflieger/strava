@@ -4,7 +4,7 @@ from selenium.webdriver.common.keys import Keys
 
 def strava_login(user, pw):
     chrome_options = webdriver.ChromeOptions()
-    chrome_options.headless = True
+    #chrome_options.headless = True
     chrome_options.add_argument("--disable-plugins-discovery");
     prefs = {"profile.managed_default_content_settings.images": 2}
     chrome_options.add_experimental_option("prefs", prefs)
