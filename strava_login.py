@@ -13,6 +13,7 @@ def strava_login(user, pw):
     print(url)
     
     driver = webdriver.Chrome("/usr/bin/chromedriver", options=chrome_options)
+    driver.implicitly_wait(3)
     driver.set_window_size(1920, 1080)
 
     driver.delete_all_cookies()

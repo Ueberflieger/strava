@@ -105,10 +105,7 @@ def give_kudos(driver, activity):
     except:
         activity["kudos"] = "already given"
         return 0
-    actions = ActionChains(driver)
-    actions.move_to_element(kudos_button).perform()
-    time.sleep(2)
-    kudos_button.click()
+    kudos_button.send_keys(Keys.ENTER)
     activity["kudos"] = "given"
     return 1
 
@@ -165,13 +162,11 @@ def get_activity_details(type, activityWebElement, config):
 
 def scroll_to_end_of_page(driver):
     body = driver.find_element_by_css_selector('body')
-    body.send_keys(Keys.END)
-    time.sleep(3)
+    body.send_keys(Keys.PAGE_DOWN)
 
 def scroll_to_start_of_page(driver):
     body = driver.find_element_by_css_selector('body')
     body.send_keys(Keys.HOME)
-    time.sleep(3)
 
 def fetch_activities(driver, num_activities, config):
 
