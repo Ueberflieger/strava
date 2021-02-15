@@ -86,7 +86,7 @@ def manual_swim_activity(driver):
     driver.get(url)
 
     hours = 0
-    min = get_random_minutes(40,50)
+    min = get_random_minutes(38,50)
     sec = get_random_seconds()
 
     manual_activity_set_type(driver, "Swim")
