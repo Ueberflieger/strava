@@ -79,7 +79,7 @@ def manual_activity_set_title(driver, title):
 def manual_activity_create_click(driver):
     upload_controls = driver.find_element_by_css_selector("div.row.upload-controls.mb-xl")
     create_button = upload_controls.find_element_by_css_selector("input.btn-primary")
-    #create_button.click()
+    create_button.click()
 
 def manual_swim_activity(driver):
     url = "https://www.strava.com/upload/manual"
