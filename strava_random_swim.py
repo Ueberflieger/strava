@@ -71,7 +71,7 @@ def manual_activity_set_distance_m(driver, distance_m):
     meter_input.clear()
     meter_input.send_keys(str(distance_m))
 
-def manual_activity_set_title(diver, title):
+def manual_activity_set_title(driver, title):
     title_input = driver.find_element_by_id("activity_name")
     title_input.clear()
     title_input.send_keys(title)
@@ -79,7 +79,7 @@ def manual_activity_set_title(diver, title):
 def manual_activity_create_click(driver):
     upload_controls = driver.find_element_by_css_selector("div.row.upload-controls.mb-xl")
     create_button = upload_controls.find_element_by_css_selector("input.btn-primary")
-    create_button.click()
+    #create_button.click()
 
 def manual_swim_activity(driver):
     url = "https://www.strava.com/upload/manual"
@@ -102,13 +102,12 @@ def manual_swim_activity(driver):
 
     manual_activity_create_click(driver)
     
-parser = ArgumentParser()
-parser.add_argument("-p", "--password", dest="password", help="Password for strava, won't be stored", required=True)
-parser.add_argument("-u", "--username", dest="username", help="Username for strava", required=True)
-
-args = parser.parse_args()
-
 if __name__ == "__main__":
+    parser = ArgumentParser()
+    parser.add_argument("-p", "--password", dest="password", help="Password for strava, won't be stored", required=True)
+    parser.add_argument("-u", "--username", dest="username", help="Username for strava", required=True)
+
+    args = parser.parse_args()
 
     driver = strava_login(args.username, args.password)
 
