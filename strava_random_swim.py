@@ -25,8 +25,24 @@ def get_random_distance_m(min, max, mod=0):
 
 def get_motivation_str():
     motivation = ["Yay!", "DONE!", "feeling great", "tough but worth it", "Did it!", "Did it",
-            ""]
+            "", "So spent", "Morning Swim"]
     return random.choice(motivation)
+
+def get_title(distance):
+
+    laps = str(int(distance/50))
+
+    first_part = random.choice([f"{laps} Laps!",""])
+
+    second_part = get_motivation_str()
+    if first_part == "":
+        while second_part == "":
+            second_part = get_motivation_str()
+
+    title = f"{first_part} {second_part}".strip()
+
+    return title
+
 
 def manual_activity_set_type(driver, type):
     activity_upload_type = driver.find_element_by_css_selector('div.upload-type')
@@ -92,12 +108,10 @@ def manual_swim_activity(driver):
     manual_activity_set_type(driver, "Swim")
     manual_activity_set_time(driver, hours, min, sec)
 
-    distance = get_random_distance_m(1500, 2500, 50) # 50m pool length
+    distance = get_random_distance_m(1500, 2500, 100) # 50m pool length
     manual_activity_set_distance_m(driver, distance)
 
-    laps = str(int(distance/50))
-    motivation = get_motivation_str()
-    title = f"{laps} Laps! {motivation}".strip()
+    title = get_title(distance)
     manual_activity_set_title(driver, title)
 
     manual_activity_create_click(driver)
